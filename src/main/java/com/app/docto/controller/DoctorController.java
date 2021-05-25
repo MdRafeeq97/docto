@@ -44,4 +44,15 @@ public class DoctorController {
         this.doctorService.addSlot(doctorId, slot);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/slots/{id}")
+    public ResponseEntity<Object> getAvailableSlots(@PathVariable(name = "id") Long doctorId) {
+        return ResponseEntity.ok().body(this.doctorService.getAvailableSlots(doctorId));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Object> searchDoctors(@RequestParam String query) {
+        return ResponseEntity.ok().body(this.doctorService.search(query));
+    }
+
 }

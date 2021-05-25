@@ -1,5 +1,6 @@
 package com.app.docto.beans;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -59,4 +60,7 @@ public class Doctor {
 
     @OneToMany(mappedBy = "doctor")
     private List<DoctorSlot> doctorSlots;
+
+    @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
+    private List<DoctorReview> doctorReviews;
 }

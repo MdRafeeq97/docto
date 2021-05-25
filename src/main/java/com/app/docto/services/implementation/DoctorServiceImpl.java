@@ -1,21 +1,25 @@
 package com.app.docto.services.implementation;
 
-import com.app.docto.beans.Doctor;
-import com.app.docto.beans.DoctorSlot;
-import com.app.docto.beans.Slot;
+import com.app.docto.beans.*;
 import com.app.docto.dao.DoctorRepository;
 import com.app.docto.dao.DoctorSlotRepository;
 import com.app.docto.exception.ValidationException;
+import com.app.docto.models.response.DoctorResp;
 import com.app.docto.services.DoctorService;
 import com.app.docto.services.SlotService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 @Service
-public class DoctorServiceImpl implements DoctorService {
+public
+class DoctorServiceImpl implements DoctorService {
     @Autowired
     private DoctorRepository doctorRepository;
 
@@ -59,11 +63,35 @@ public class DoctorServiceImpl implements DoctorService {
      if(slot.getEndTime().before(slot.getStartTime())) {
          throw new ValidationException("Start time should be before end time");
      }
+
      Slot savedSlot = this.slotService.addSlot(slot);
+     this.doctorSlotRepository.findByDoctorDoctorIdAndSlotSlotId(doctorId, savedSlot.getSlotId())
+            .ifPresent((doctorSlot) -> {throw new ValidationException("Slot is already added for doctor " + doctorId);});
      DoctorSlot doctorSlot = new DoctorSlot();
      doctorSlot.setDoctor(doctor);
      doctorSlot.setSlot(savedSlot);
      doctorSlot.setAvailable(true);
      this.doctorSlotRepository.save(doctorSlot);
+    }
+
+    @Override
+    public List<Doctor> search(String query) {
+        Specification<Doctor> specification = (root, cq, cb) -> {
+            Join<Doctor, Speciality> doctorSpecialityJoin = root.join("specialities");
+            Join<Speciality, HealthTag> specialityHealthTagJoin = doctorSpecialityJoin.join("healthTags");
+
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.or(cb.like(root.get("firstName"), "%"+query+"%"), cb.like(root.get("lastName"), "%"+query+"%")));
+            predicates.add(cb.like(doctorSpecialityJoin.get("specialityName"), "%"+query+"%"));
+            predicates.add(cb.like(specialityHealthTagJoin.get("tagName"), "%"+query+"%"));
+            cq.groupBy(root.get("doctorId"));
+            return cb.or(predicates.toArray(new Predicate[0]));
+        };
+        return this.doctorRepository.findAll(specification);
+    }
+
+    @Override
+    public List<DoctorSlot> getAvailableSlots(Long doctorId) {
+        return this.doctorSlotRepository.findByDoctorDoctorId(doctorId);
     }
 }

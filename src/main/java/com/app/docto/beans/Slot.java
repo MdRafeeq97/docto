@@ -1,5 +1,6 @@
 package com.app.docto.beans;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -24,6 +25,4 @@ public class Slot {
     @Column(name = "endtime")
     private Date endTime;
 
-    @OneToMany(mappedBy = "slot")
-    private List<DoctorSlot> doctorSlots;
 }

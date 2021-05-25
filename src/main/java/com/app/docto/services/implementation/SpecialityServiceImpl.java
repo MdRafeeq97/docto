@@ -2,11 +2,11 @@ package com.app.docto.services.implementation;
 
 import com.app.docto.beans.Speciality;
 import com.app.docto.dao.SpecialityRepository;
+import com.app.docto.exception.ValidationException;
 import com.app.docto.services.SpecialityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.validation.ValidationException;
 import java.util.List;
 
 @Service
