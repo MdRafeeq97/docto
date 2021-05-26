@@ -4,7 +4,6 @@ import com.app.docto.beans.*;
 import com.app.docto.dao.DoctorRepository;
 import com.app.docto.dao.DoctorSlotRepository;
 import com.app.docto.exception.ValidationException;
-import com.app.docto.models.response.DoctorResp;
 import com.app.docto.services.DoctorService;
 import com.app.docto.services.SlotService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,14 +76,18 @@ class DoctorServiceImpl implements DoctorService {
     @Override
     public List<Doctor> search(String query) {
         Specification<Doctor> specification = (root, cq, cb) -> {
-            Join<Doctor, Speciality> doctorSpecialityJoin = root.join("specialities");
-            Join<Speciality, HealthTag> specialityHealthTagJoin = doctorSpecialityJoin.join("healthTags");
 
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.or(cb.like(root.get("firstName"), "%"+query+"%"), cb.like(root.get("lastName"), "%"+query+"%")));
+
+            Join<Doctor, Speciality> doctorSpecialityJoin = root.join("specialities");
             predicates.add(cb.like(doctorSpecialityJoin.get("specialityName"), "%"+query+"%"));
+
+            Join<Speciality, HealthTag> specialityHealthTagJoin = doctorSpecialityJoin.join("healthTags");
             predicates.add(cb.like(specialityHealthTagJoin.get("tagName"), "%"+query+"%"));
             cq.groupBy(root.get("doctorId"));
+            cq.orderBy(cb.desc(root.get("avgReview")), cb.asc(root.get("doctorId")));
+
             return cb.or(predicates.toArray(new Predicate[0]));
         };
         return this.doctorRepository.findAll(specification);

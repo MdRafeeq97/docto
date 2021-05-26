@@ -63,4 +63,7 @@ public class Doctor {
 
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
     private List<DoctorReview> doctorReviews;
+
+    @Column(name = "avgreview")
+    private Double avgReview;
 }

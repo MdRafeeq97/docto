@@ -12,4 +12,6 @@ public interface PatientService  {
     void createAppointment(Long patientId, AppointmentRequest appointment);
 
     void reviewDoctor(Long patientId, DoctorReviewReq reviewReq);
+
+    void cancelAppointment(Long patientId, Long appointmentId);
 }

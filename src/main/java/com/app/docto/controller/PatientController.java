@@ -36,6 +36,13 @@ public class PatientController {
         return ResponseEntity.ok().body("Appointment Successfully booked");
     }
 
+    @PostMapping("/{id}/appointment/{appid}/cancel")
+    public ResponseEntity<Object> cancelAppointment(@PathVariable(name = "id") Long patientId,
+                                                    @PathVariable(name = "appid") Long appointmentId) {
+        this.patientService.cancelAppointment(patientId, appointmentId);
+        return ResponseEntity.ok().body("Appointment Successfully cancelled");
+    }
+
     @PostMapping("/{id}/review")
     public ResponseEntity<Object> reviewDoctor(@PathVariable(name = "id") Long patientId,
                                                @RequestBody @Valid DoctorReviewReq doctorReviewReq) {

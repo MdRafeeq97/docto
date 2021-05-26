@@ -14,10 +14,8 @@ import com.app.docto.models.request.AppointmentRequest;
 import com.app.docto.models.request.DoctorReviewReq;
 import com.app.docto.services.PatientService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.Join;
 import java.util.Date;
 import java.util.List;
 
@@ -62,6 +60,25 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    public void cancelAppointment(Long patientId, Long appointmentId) {
+        this.patientRepository.findById(patientId)
+                .orElseThrow(() -> new ValidationException("Patient doesn't exists "));
+
+        Appointment appointment = this.appointmentRepository.findByPatientPatientidAndAppointmentId(patientId, appointmentId)
+                .orElseThrow(() -> new ValidationException("Appointment doesn't exists"));
+
+        if(appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new ValidationException("Appointment is already cancelled");
+        }
+        if(appointment.getStatus() == AppointmentStatus.CLOSED) {
+            throw new ValidationException("Cannot cancel a closed appointment");
+        }
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        appointment.getDoctorSlot().setAvailable(true);
+        this.appointmentRepository.save(appointment);
+    }
+
+    @Override
     public void reviewDoctor(Long patientId, DoctorReviewReq reviewReq) {
         Patient patient = this.patientRepository.findById(patientId)
                 .orElseThrow(() -> new ValidationException("Patient doesn't exists "));
@@ -73,18 +90,22 @@ public class PatientServiceImpl implements PatientService {
             throw new ValidationException("Cannot review for an unsuccessful appointment");
         }
 
-//        if(appointment.getAppointmentDate().after(new Date())) {
-//            throw new ValidationException("Cannot review before the appointment is closed");
-//        }
+        if(appointment.getAppointmentDate().after(new Date())) {
+            throw new ValidationException("Cannot review before the appointment is closed");
+        }
+
 
         Doctor doctor = appointment.getDoctorSlot().getDoctor();
+        List<DoctorReview> reviews = doctor.getDoctorReviews();
+        Double avgReview = reviews.stream().mapToInt(DoctorReview::getStars).average().orElse(Double.NaN);
+
         DoctorReview doctorReview = new DoctorReview();
         doctorReview.setDoctor(doctor);
         doctorReview.setPatient(patient);
         doctorReview.setStars(reviewReq.getStars());
-        List<DoctorReview> reviews = doctor.getDoctorReviews();
         reviews.add(doctorReview);
         doctor.setDoctorReviews(reviews);
+        doctor.setAvgReview(avgReview);
         this.doctorRepository.save(doctor);
     }
 }
