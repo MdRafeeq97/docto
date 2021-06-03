@@ -6,13 +6,19 @@ import com.app.docto.dao.DoctorRepository;
 import com.app.docto.dao.DoctorSlotRepository;
 import com.app.docto.dao.SlotRepository;
 import com.app.docto.enums.AppointmentStatus;
+import com.app.docto.enums.TransactionStatus;
 import com.app.docto.exception.ValidationException;
 import com.app.docto.models.request.AppointmentRequest;
+import com.app.docto.models.request.PaymentRequest;
+import com.app.docto.models.response.PaymentResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 
 @Component
+@Slf4j
 public class AppointmentRequestMapper  implements Mapper<AppointmentRequest, Appointment> {
 
     @Autowired
@@ -23,6 +29,9 @@ public class AppointmentRequestMapper  implements Mapper<AppointmentRequest, App
 
     @Autowired
     private DoctorSlotRepository doctorSlotRepository;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
     public Appointment mapOne(AppointmentRequest appointmentRequest) {
@@ -36,9 +45,18 @@ public class AppointmentRequestMapper  implements Mapper<AppointmentRequest, App
         }
         Appointment appointment = new Appointment();
         appointment.setAppointmentDate(doctorSlot.getSlot().getStartTime());
+        //TODO check payment status
+        PaymentRequest paymentRequest = new PaymentRequest();
+        paymentRequest.setCurrency("$");
+        paymentRequest.setAmount(100.0);
+        paymentRequest.setToken("1242");
+        PaymentResponse response = restTemplate.postForObject("http://payment-service/payment", paymentRequest, PaymentResponse.class);
+        log.info(response.getTransactionId());
+        if(response.getTransactionStatus() != TransactionStatus.SUCCESSFUL) {
+            throw new ValidationException("Could not complete payment");
+        }
         doctorSlot.setAvailable(false);
         appointment.setCancelled(false);
-        //TODO check payment status
         appointment.setStatus(AppointmentStatus.CLOSED);
         appointment.setDoctorSlot(doctorSlot);
         return appointment;
