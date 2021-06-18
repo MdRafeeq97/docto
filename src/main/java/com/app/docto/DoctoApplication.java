@@ -6,7 +6,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
-@EnableDiscoveryClient
+//@EnableDiscoveryClient
 public class DoctoApplication extends SpringBootServletInitializer {
 
 	public static void main(String[] args) {

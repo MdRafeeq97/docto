@@ -2,9 +2,7 @@ package com.app.docto.services;
 
 import com.app.docto.beans.Doctor;
 import com.app.docto.beans.DoctorSlot;
-import com.app.docto.beans.Slot;
-import com.app.docto.models.response.DoctorResp;
-import org.springframework.http.ResponseEntity;
+import com.app.docto.models.request.Slot;
 
 import java.util.List;
 

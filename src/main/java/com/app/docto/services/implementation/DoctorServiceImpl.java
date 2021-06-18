@@ -4,13 +4,15 @@ import com.app.docto.beans.*;
 import com.app.docto.dao.DoctorRepository;
 import com.app.docto.dao.DoctorSlotRepository;
 import com.app.docto.exception.ValidationException;
+import com.app.docto.models.request.Slot;
 import com.app.docto.services.DoctorService;
-import com.app.docto.services.SlotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,9 +23,6 @@ public
 class DoctorServiceImpl implements DoctorService {
     @Autowired
     private DoctorRepository doctorRepository;
-
-    @Autowired
-    private SlotService slotService;
 
     @Autowired
     private DoctorSlotRepository doctorSlotRepository;
@@ -63,12 +62,12 @@ class DoctorServiceImpl implements DoctorService {
          throw new ValidationException("Start time should be before end time");
      }
 
-     Slot savedSlot = this.slotService.addSlot(slot);
-     this.doctorSlotRepository.findByDoctorDoctorIdAndSlotSlotId(doctorId, savedSlot.getSlotId())
-            .ifPresent((doctorSlot) -> {throw new ValidationException("Slot is already added for doctor " + doctorId);});
+     this.doctorSlotRepository.findByDoctorDoctorIdAndStartTimeAndEndTime(doctorId, slot.getStartTime(), slot.getEndTime())
+            .ifPresent((doctorSlot) -> {throw new ValidationException("Slot already exists for doctor " + doctorId);});
      DoctorSlot doctorSlot = new DoctorSlot();
      doctorSlot.setDoctor(doctor);
-     doctorSlot.setSlot(savedSlot);
+     doctorSlot.setStartTime(slot.getStartTime());
+     doctorSlot.setEndTime(slot.getEndTime());
      doctorSlot.setAvailable(true);
      this.doctorSlotRepository.save(doctorSlot);
     }
@@ -80,14 +79,13 @@ class DoctorServiceImpl implements DoctorService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.or(cb.like(root.get("firstName"), "%"+query+"%"), cb.like(root.get("lastName"), "%"+query+"%")));
 
-            Join<Doctor, Speciality> doctorSpecialityJoin = root.join("specialities");
-            predicates.add(cb.like(doctorSpecialityJoin.get("specialityName"), "%"+query+"%"));
+            Join<Doctor, Speciality> doctorSpecialityJoin = root.join("specialities", JoinType.LEFT);
+            Join<Speciality, HealthTag> specialityHealthTagJoin = doctorSpecialityJoin.join("healthTags", JoinType.LEFT);
 
-            Join<Speciality, HealthTag> specialityHealthTagJoin = doctorSpecialityJoin.join("healthTags");
+            predicates.add(cb.like(doctorSpecialityJoin.get("specialityName"), "%"+query+"%"));
             predicates.add(cb.like(specialityHealthTagJoin.get("tagName"), "%"+query+"%"));
             cq.groupBy(root.get("doctorId"));
             cq.orderBy(cb.desc(root.get("avgReview")), cb.asc(root.get("doctorId")));
-
             return cb.or(predicates.toArray(new Predicate[0]));
         };
         return this.doctorRepository.findAll(specification);

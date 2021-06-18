@@ -1,21 +1,26 @@
 package com.app.docto.controller;
 
 import com.app.docto.beans.Doctor;
-import com.app.docto.beans.Slot;
+import com.app.docto.models.request.Slot;
 import com.app.docto.services.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.Date;
 import java.util.List;
 
 @RestController
 @RequestMapping("/doctor")
+@RefreshScope
 public class DoctorController {
     @Autowired
     private DoctorService doctorService;
+
 
     @PostMapping
     public ResponseEntity<Object> createDoctor(@RequestBody @Valid Doctor doctor) {
@@ -29,8 +34,9 @@ public class DoctorController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasRole('admin')")
     @GetMapping("/{id}")
-    public ResponseEntity<Doctor> getDoctor(@PathVariable(name = "id") Long doctorId) {
+    public ResponseEntity<Object> getDoctor(@PathVariable(name = "id") Long doctorId) {
         return ResponseEntity.ok().body(this.doctorService.getDoctor(doctorId));
     }
 
@@ -39,7 +45,7 @@ public class DoctorController {
         return ResponseEntity.ok().body(this.doctorService.getDoctors());
     }
 
-    @PostMapping("/addSlot/{id}")
+    @PostMapping("{id}/addSlot")
     public ResponseEntity<Object> addSlot(@PathVariable(name = "id") Long doctorId, @Valid @RequestBody Slot slot) {
         this.doctorService.addSlot(doctorId, slot);
         return ResponseEntity.ok().build();
@@ -53,6 +59,12 @@ public class DoctorController {
     @GetMapping("/search")
     public ResponseEntity<Object> searchDoctors(@RequestParam String query) {
         return ResponseEntity.ok().body(this.doctorService.search(query));
+    }
+
+    @GetMapping("/account")
+    public ResponseEntity<Object> getAuthDetails() {
+        WebTarget
+        return ResponseEntity.ok().body(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
     }
 
 }
